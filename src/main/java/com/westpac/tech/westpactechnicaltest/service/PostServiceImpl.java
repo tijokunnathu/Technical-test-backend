@@ -5,6 +5,9 @@ import com.westpac.tech.westpactechnicaltest.dto.PostDto;
 import com.westpac.tech.westpactechnicaltest.dto.PostsCommentsDto;
 import com.westpac.tech.westpactechnicaltest.dto.UsersDto;
 import com.westpac.tech.westpactechnicaltest.helper.TechnicalTestRestClient;
+import com.westpac.tech.westpactechnicaltest.mapper.CommentMapper;
+import com.westpac.tech.westpactechnicaltest.mapper.PostMapper;
+import com.westpac.tech.westpactechnicaltest.mapper.UserMapper;
 import lombok.ToString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -12,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @ToString
 @Service
@@ -32,22 +34,16 @@ public class PostServiceImpl implements PostService {
         List<CommentsDto> commentsList = restClient.populateComments();
         List<UsersDto> usersList = restClient.populateUserDetails();
         postsList.forEach(post -> {
-            PostsCommentsDto postsCommentsDto = new PostsCommentsDto();
-            List<CommentsDto> comments = commentsList.stream().filter(comment ->
-                    comment.getPostId().equals(post.getId())).collect(Collectors.toList());
-            postsCommentsDto.setBody(post.getBody());
-            postsCommentsDto.setTitle(post.getTitle());
-            postsCommentsDto.setId(post.getId());
-            postsCommentsDto.setUserId(post.getUserId());
-            UsersDto user = usersList.stream().filter(usersDto ->
-                    usersDto.getId().equals(post.getUserId())).findAny().orElse(null);
+            CommentMapper commentMapper = new CommentMapper(commentsList);
+            PostMapper postMapper = new PostMapper();
+            PostsCommentsDto postsCommentsDto = postMapper.mapPosts(post);
+            UserMapper userMapper = new UserMapper(usersList);
+            UsersDto user = userMapper.mapUsers(post.getUserId());
             postsCommentsDto.setName(user.getName());
             postsCommentsDto.setUserName(user.getUsername());
-            postsCommentsDto.setComments(comments);
+            postsCommentsDto.setComments(commentMapper.mapComments(post.getId()));
             postsComments.add(postsCommentsDto);
         });
-
-
         return postsComments;
     }
 }

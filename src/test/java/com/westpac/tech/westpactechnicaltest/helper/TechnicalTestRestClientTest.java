@@ -1,38 +1,49 @@
 package com.westpac.tech.westpactechnicaltest.helper;
 
+import com.westpac.tech.westpactechnicaltest.config.AppProperties;
 import com.westpac.tech.westpactechnicaltest.dto.PostDto;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+@RunWith(MockitoJUnitRunner.class)
 class TechnicalTestRestClientTest {
-    @Mock
+
     private RestTemplate restTemplate;
-    @InjectMocks
-    TechnicalTestRestClient technicalTestRestClient;
+
+    private TechnicalTestRestClient technicalTestRestClient;
+    private AppProperties appProperties;
+
+    public TechnicalTestRestClientTest() {
+        this.restTemplate = Mockito.mock(RestTemplate.class);
+        this.appProperties = new AppProperties();
+        this.appProperties.setDataUrl("https://jsonplaceholder.typicode.com");
+        this.technicalTestRestClient = new TechnicalTestRestClient(appProperties, restTemplate);
+    }
+
     @Test
     void testGetPost_whenSuccessScenario_thenReturnNonEmptyList() {
         PostDto postDto = new PostDto();
         postDto.setId(1);
-        Mockito.when(restTemplate.exchange("https://jsonplaceholder.typicode.com/posts", HttpMethod.GET, null,
+        String url = appProperties.getDataUrl() + "/posts";
+        ResponseEntity<List<PostDto>> responseEntity = ResponseEntity.status(HttpStatus.OK)
+                .body(Collections.singletonList(postDto));
+        Mockito.when(restTemplate.exchange(url, HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<PostDto>>() {
-                }).getBody());
+                })).thenReturn(responseEntity);
         List<PostDto> postDtos = technicalTestRestClient.populatePosts();
 
         Assert.assertEquals(postDtos.get(0).getId(), postDto.getId());
 
-    }
-
-    @Test
-    void populateComments() {
     }
 }
